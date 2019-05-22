@@ -87,7 +87,8 @@ _io_evt = [
     ),
     ("clk48", 0, Pins("44"), IOStandard("LVCMOS33"))
 ]
-_io_dvt = [
+
+_io_pvt = [
     ("serial", 0,
         Subsignal("rx", Pins("C3")),
         Subsignal("tx", Pins("B3"), Misc("PULLUP")),
@@ -125,6 +126,7 @@ _io_dvt = [
     ),
     ("clk48", 0, Pins("F4"), IOStandard("LVCMOS33"))
 ]
+
 _io_hacker = [
     ("serial", 0,
         Subsignal("rx", Pins("C3")),
@@ -197,7 +199,6 @@ class _CRG(Module):
         ]
 
         if use_pll:
-
             # Divide clk48 down to clk12, to ensure they're synchronized.
             # By doing this, we avoid needing clock-domain crossing.
             clk12_counter = Signal(2)
@@ -316,12 +317,12 @@ class Platform(LatticePlatform):
     def __init__(self, revision=None, toolchain="icestorm"):
         if revision == "evt":
             LatticePlatform.__init__(self, "ice40-up5k-sg48", _io_evt, _connectors, toolchain="icestorm")
-        elif revision == "dvt":
-            LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io_dvt, _connectors, toolchain="icestorm")
+        elif revision == "pvt" or revision == "dvt":
+            LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io_pvt, _connectors, toolchain="icestorm")
         elif revision == "hacker":
             LatticePlatform.__init__(self, "ice40-up5k-uwg30", _io_hacker, _connectors, toolchain="icestorm")
         else:
-            raise ValueError("Unrecognized reivsion: {}.  Known values: evt, dvt, hacker".format(revision))
+            raise ValueError("Unrecognized reivsion: {}.  Known values: evt, dvt, pvt, hacker".format(revision))
 
     def create_programmer(self):
         raise ValueError("programming is not supported")
@@ -593,8 +594,14 @@ class Version(Module, AutoCSR):
                                 stderr=subprocess.PIPE)
             (git_stdout, _) = git_rev_cmd.communicate()
             if git_rev_cmd.wait() != 0:
-                print('unable to get git version')
-                return
+                git_rev_cmd = subprocess.Popen(["git", "rev-parse", "HEAD"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
+                (git_stdout, _) = git_rev_cmd.communicate()
+                if git_rev_cmd.wait() != 0:
+                    print('WARNING: unable to get git version')
+                    return (0, 0, 0, 0, 0, False)
+                return (0, 0, 0, makeint(git_stdout[0:8], 16), 0, False)
             raw_git_rev = git_stdout.decode().strip()
 
             dirty = False
@@ -773,8 +780,6 @@ class BaseSoC(SoCCore):
             pulldown = TSTriple()
             self.specials += pulldown.get_tristate(usb_pads.pulldown)
             self.comb += pulldown.oe.eq(0)
-        # self.submodules.usb = epmem.MemInterface(usb_iobuf)
-        # self.submodules.usb = unififo.UsbUniFifo(usb_iobuf)
 
         # Add GPIO pads for the touch buttons
         self.submodules.touch = TouchPads(platform.request("touch"))
@@ -784,7 +789,7 @@ class BaseSoC(SoCCore):
         # and the "-dffe_min_ce_use 4" flag prevents Yosys from generating a
         # Clock Enable signal for a LUT that has fewer than 4 flip-flops.
         # This increases density, and lets us use the FPGA more efficiently.
-        platform.toolchain.nextpnr_yosys_template[2] += " -relut -dffe_min_ce_use 5"
+        platform.toolchain.nextpnr_yosys_template[2] += " -relut -dffe_min_ce_use 4"
         if use_dsp:
             platform.toolchain.nextpnr_yosys_template[2] += " -dsp"
 
@@ -813,7 +818,7 @@ def main():
         help="where to have the CPU obtain its executable code from"
     )
     parser.add_argument(
-        "--revision", choices=["dvt", "evt", "hacker"], required=True,
+        "--revision", choices=["pvt", "dvt", "evt", "hacker"], required=True,
         help="build foboot for a particular hardware revision"
     )
     parser.add_argument(
@@ -834,34 +839,9 @@ def main():
     parser.add_argument(
         "--placer", choices=["sa", "heap"], help="which placer to use in nextpnr"
     )
-    parser.add_argument(
-        "--export-random-rom-file", help="Generate a random ROM file and save it to a file"
-    )
     args = parser.parse_args()
 
     output_dir = 'build'
-
-    if args.export_random_rom_file is not None:
-        size = 0x2000
-        def xorshift32(x):
-            x = x ^ (x << 13) & 0xffffffff
-            x = x ^ (x >> 17) & 0xffffffff
-            x = x ^ (x << 5)  & 0xffffffff
-            return x & 0xffffffff
-
-        def get_rand(x):
-            out = 0
-            for i in range(32):
-                x = xorshift32(x)
-                if (x & 1) == 1:
-                    out = out | (1 << i)
-            return out & 0xffffffff
-        seed = 1
-        with open(args.export_random_rom_file, "w", newline="\n") as output:
-            for d in range(int(size / 4)):
-                seed = get_rand(seed)
-                print("{:08x}".format(seed), file=output)
-        return 0
 
     compile_software = False
     if args.boot_source == "bios" and args.bios is None:

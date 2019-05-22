@@ -1,21 +1,21 @@
 [submodule "deps/migen"]
-	path = deps/migen
+	path = hw/deps/migen
 	url = https://github.com/m-labs/migen.git
 [submodule "deps/litex"]
-	path = deps/litex
+	path = hw/deps/litex
 	url = https://github.com/enjoy-digital/litex.git
 [submodule "deps/litescope"]
-	path = deps/litescope
+	path = hw/deps/litescope
 	url = https://github.com/enjoy-digital/litescope.git
 [submodule "deps/pyserial"]
-	path = deps/pyserial
+	path = hw/deps/pyserial
 	url = https://github.com/pyserial/pyserial.git
 [submodule "deps/litedram"]
-	path = deps/litedram
+	path = hw/deps/litedram
 	url = https://github.com/enjoy-digital/litedram.git
 [submodule "deps/valentyusb"]
-	path = deps/valentyusb
+	path = hw/deps/valentyusb
 	url = https://github.com/im-tomu/valentyusb.git
 [submodule "deps/lxsocsupport"]
-	path = deps/lxsocsupport
+	path = hw/deps/lxsocsupport
 	url = https://github.com/xobs/lxsocsupport.git
