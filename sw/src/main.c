@@ -41,6 +41,9 @@ int main(int argc, char **argv)
     while (1)
     {
         usb_poll();
+        if (cdc_connected()) {
+            tester_poll();
+        }
     }
     return 0;
 }

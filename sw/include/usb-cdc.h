@@ -38,6 +38,8 @@ LGPL License Terms @ref lgpl_license
 #ifndef __CDC_H
 #define __CDC_H
 
+#include <stdint.h>
+
 /* Definitions of Communications Device Class from
  * "Universal Serial Bus Class Definitions for Communications Devices
  * Revision 1.2"
@@ -155,6 +157,9 @@ struct usb_cdc_notification {
 	uint16_t wIndex;
 	uint16_t wLength;
 } __attribute__((packed));
+
+int cdc_connected();
+void cdc_set_connected(int is_connected);
 
 #endif
 

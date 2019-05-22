@@ -3,6 +3,7 @@
 #include <usb.h>
 
 #include <usb-desc.h>
+#include <usb-cdc.h>
 
 static uint8_t reply_buffer[8];
 static uint8_t usb_configuration = 0;
@@ -15,6 +16,14 @@ void usb_setup(const struct usb_setup_request *setup)
 
     switch (setup->wRequestAndType)
     {
+
+    case 0x2021: // Set Line Coding
+        break;
+
+    case 0x2221: // Set control line state
+        cdc_set_connected(setup->wValue & 1); /* Check RTS bit */
+        break;
+
     case 0x0500: // SET_ADDRESS
     case 0x0b01: // SET_INTERFACE
         break;
