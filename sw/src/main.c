@@ -1,10 +1,11 @@
-#include <stdio.h>
+#include <fomu/csr.h>
 #include <irq.h>
 #include <usb.h>
 #include <time.h>
 #include <rgb.h>
 #include <spi.h>
-#include <fomu/csr.h>
+#include <tester.h>
+#include <usb-cdc.h>
 
 struct ff_spi *spi;
 

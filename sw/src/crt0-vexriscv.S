@@ -6,13 +6,6 @@
 
 _start:
   j crt_init
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
-  nop
 
 .section .text
 .global  trap_entry
@@ -55,7 +48,6 @@ trap_entry:
   mret
   .text
 
-
 crt_init:
   la sp, _fstack + 4
   la a0, trap_entry
@@ -87,5 +79,6 @@ bss_done:
   csrw mie,a0
 
   call main
-infinit_loop:
-  j infinit_loop
+
+infinite_loop:
+  j infinite_loop
