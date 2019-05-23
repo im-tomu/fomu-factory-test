@@ -78,22 +78,25 @@ static uint32_t test_one_pad(uint8_t src, uint8_t dest)
     unsigned int matches = 0;
     const unsigned int loop_max = 10;
 
-    put_char('0'+src);
+    put_char('0' + src);
     put_char('>');
-    put_char('0'+dest);
+    put_char('0' + dest);
     put_char(':');
-    for (loops = 0; loops < loop_max; loops++) {
+    for (loops = 0; loops < loop_max; loops++)
+    {
         // Set pin 2 as output, and pin 0 as input, and see if it loops back.
         touch_oe_write((1 << src) | (0 << dest));
-        touch_o_write((loops&1) << src);
-        if ((loops&1) == !!((touch_i_read() & (1 << dest))))
+        touch_o_write((loops & 1) << src);
+        if ((loops & 1) == !!((touch_i_read() & (1 << dest))))
             matches++;
     }
-    if (matches == loop_max) {
+    if (matches == loop_max)
+    {
         put_string("OK ");
         return 0;
     }
-    else {
+    else
+    {
         put_string("FAIL(");
         put_hex_byte(loop_max);
         put_char('!');
@@ -107,7 +110,7 @@ static uint32_t test_touch(void)
 {
     uint32_t error_count = 0;
 
-    put_string("Touch: ");
+    put_string("TOUCH: ");
 
     error_count += test_one_pad(0, 2);
     error_count += test_one_pad(0, 3);
@@ -159,7 +162,7 @@ static uint32_t test_one_color(int color)
 
     uint32_t ratio = ((detected_pulses * 100) / sent_pulses);
     put_string("Ratio: 0x");
-    put_hex(ratio);
+    put_hex_byte(ratio);
     put_string(" / ");
     if (ratio > 60)
     {
@@ -188,18 +191,20 @@ static uint32_t test_led(void)
 void tester_poll(void)
 {
     int error_count = 0;
-    put_string("\nHello, world!\n");
+    put_char('\n');
+    flush_serial();
+    put_string("\nFomu Tester " GIT_VERSION "\n");
     error_count += test_spi();
     error_count += test_led();
     error_count += test_touch();
 
-    put_string("FOMU: ");
+    put_string("FOMU: (0x");
     put_hex(error_count);
-    put_string(" errors ");
+    put_string(" errors) ");
     if (error_count)
         put_string("FAIL!\n");
     else
-        put_string("Pass\n");
+        put_string("ALL_PASS\n");
     while (1)
     {
         usb_poll();

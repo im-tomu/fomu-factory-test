@@ -49,7 +49,7 @@ CFLAGS     := $(ADD_CFLAGS) \
 			  -ffunction-sections -fdata-sections -fno-common \
 			  -fomit-frame-pointer -Os \
 			  -march=rv32i \
-			  -DGIT_VERSION=u\"$(GIT_VERSION)\" -std=gnu11
+			  -DGIT_VERSION=\"$(GIT_VERSION)\" -std=gnu11
 CXXFLAGS   := $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
 LFLAGS     := $(CFLAGS) $(ADD_LFLAGS) -L$(LD_DIR) \
 			  -nostartfiles \
