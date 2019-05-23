@@ -328,26 +328,84 @@ class Platform(LatticePlatform):
         raise ValueError("programming is not supported")
 
 class SBLED(Module, AutoCSR):
-    def __init__(self, pads):
+    def __init__(self, pads, detected_pulse):
         rgba_pwm = Signal(3)
 
         self.dat = CSRStorage(8)
         self.addr = CSRStorage(4)
         self.ctrl = CSRStorage(4)
 
+        self.bypass = CSRStorage(3)
+        self.pwm_count = CSRStorage(24)
+        self.sent_pulses = CSRStatus(32)
+        self.detected_pulses = CSRStatus(32)
+
+        count = Signal(24)
+        led_value = Signal()
+        rgb = Signal(3)
+        sent_pulses = Signal(32)
+        detected_pulses = Signal(32)
+        rgba_drv = Signal(3)
+
+        self.sync += [
+            # When the PWM count is updated, reset everything and
+            # copy the results out.
+            If(self.pwm_count.re,
+                count.eq(0),
+
+                self.sent_pulses.status.eq(sent_pulses),
+                sent_pulses.eq(0),
+
+                self.detected_pulses.status.eq(detected_pulses),
+                detected_pulses.eq(0),
+
+            ).Elif(count < self.pwm_count.storage,
+                count.eq(count + 1),
+
+            ).Else(
+                count.eq(0),
+                led_value.eq(~led_value),
+                If(led_value,
+                    sent_pulses.eq(sent_pulses + 1),
+                    If(detected_pulse,
+                        detected_pulses.eq(detected_pulses + 1),
+                    ),
+                ),
+            ),
+        ]
+
+        # Wire up the bypasses
+        self.comb += [
+            If(self.bypass.storage[0],
+                rgb[0].eq(led_value),
+            ).Else(
+                rgb[0].eq(rgba_pwm[0]),
+            ),
+            If(self.bypass.storage[1],
+                rgb[1].eq(led_value),
+            ).Else(
+                rgb[1].eq(rgba_pwm[1]),
+            ),
+            If(self.bypass.storage[2],
+                rgb[2].eq(led_value),
+            ).Else(
+                rgb[2].eq(rgba_pwm[2]),
+            ),
+        ]
+
         self.specials += Instance("SB_RGBA_DRV",
             i_CURREN = self.ctrl.storage[1],
             i_RGBLEDEN = self.ctrl.storage[2],
-            i_RGB0PWM = rgba_pwm[0],
-            i_RGB1PWM = rgba_pwm[1],
-            i_RGB2PWM = rgba_pwm[2],
+            i_RGB0PWM = rgb[0],
+            i_RGB1PWM = rgb[1],
+            i_RGB2PWM = rgb[2],
             o_RGB0 = pads.rgb0,
             o_RGB1 = pads.rgb1,
             o_RGB2 = pads.rgb2,
-            p_CURRENT_MODE = "0b1",
-            p_RGB0_CURRENT = "0b000011",
-            p_RGB1_CURRENT = "0b000001",
-            p_RGB2_CURRENT = "0b000011",
+            p_CURRENT_MODE = "0b1", # Half current
+            p_RGB0_CURRENT = "0b000011", # 4 mA
+            p_RGB1_CURRENT = "0b000001", # 2 mA
+            p_RGB2_CURRENT = "0b000011", # 4 mA
         )
 
         self.specials += Instance("SB_LEDDA_IP",
@@ -367,14 +425,12 @@ class SBLED(Module, AutoCSR):
             i_LEDDADDR0 = self.addr.storage[0],
             i_LEDDDEN = self.dat.re,
             i_LEDDEXE = self.ctrl.storage[0],
-            # o_LEDDON = led_is_on, # Indicates whether LED is on or not
             # i_LEDDRST = ResetSignal(), # This port doesn't actually exist
             o_PWMOUT0 = rgba_pwm[0], 
             o_PWMOUT1 = rgba_pwm[1], 
             o_PWMOUT2 = rgba_pwm[2],
             o_LEDDON = Signal(), 
         )
-
 
 class SBWarmBoot(Module, AutoCSR):
     def __init__(self):
@@ -766,9 +822,6 @@ class BaseSoC(SoCCore):
             i_externalResetVector=self.reboot.addr.storage,
         )
 
-        self.submodules.rgb = SBLED(platform.request("led"))
-        self.submodules.version = Version()
-
         # Add USB pads
         usb_pads = platform.request("usb")
         usb_iobuf = usbio.IoBuf(usb_pads.d_p, usb_pads.d_n, usb_pads.pullup)
@@ -783,6 +836,8 @@ class BaseSoC(SoCCore):
 
         # Add GPIO pads for the touch buttons
         self.submodules.touch = TouchPads(platform.request("touch"))
+        self.submodules.rgb = SBLED(platform.request("led"), self.touch.i.status[1])
+        self.submodules.version = Version()
 
         # Add "-relut -dffe_min_ce_use 4" to the synth_ice40 command.
         # The "-reult" adds an additional LUT pass to pack more stuff in,
@@ -850,7 +905,7 @@ def main():
     cpu_type = "vexriscv"
     cpu_variant = "min"
     if args.with_debug:
-        cpu_variant = "debug"
+        cpu_variant = cpu_variant + "+debug"
 
     if args.no_cpu:
         cpu_type = None
