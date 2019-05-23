@@ -7,16 +7,12 @@
 
 static const int max_byte_length = 64;
 
-#define EP0OUT_BUFFERS 4
 #define EP2OUT_BUFFERS 4
-__attribute__((aligned(4)))
 #define EP0OUT_BUFFER_SIZE 256
-// static uint8_t volatile usb_ep0out_buffer_len[EP0OUT_BUFFERS];
-static uint8_t volatile usb_ep0out_buffer[EP0OUT_BUFFER_SIZE];
+__attribute__((aligned(4)))
+static uint8_t volatile usb_ep0out_buffer[64 + 2];
 static int wait_reply;
 static int wait_type;
-// static volatile uint8_t usb_ep0out_wr_ptr;
-// static volatile uint8_t usb_ep0out_rd_ptr;
 
 #define EP2OUT_BUFFER_SIZE 256
 static uint8_t volatile usb_ep2out_buffer_len[EP2OUT_BUFFERS];
@@ -220,21 +216,35 @@ void usb_isr(void) {
     // and clear the "pending" bit.
     if (ep0out_pending) {
         unsigned int byte_count = 0;
-        for (byte_count = 0; byte_count < EP0OUT_BUFFER_SIZE; byte_count++)
-            usb_ep0out_buffer[byte_count] = 0;
+        for (byte_count = 0; byte_count < sizeof(usb_ep0out_buffer); byte_count++)
+            usb_ep0out_buffer[byte_count] = '\0';
 
         byte_count = 0;
         while (!usb_ep_0_out_obuf_empty_read()) {
-            usb_ep0out_buffer[byte_count++] = usb_ep_0_out_obuf_head_read();
+            uint8_t byte = usb_ep_0_out_obuf_head_read();
             usb_ep_0_out_obuf_head_write(0);
+            usb_ep0out_buffer[byte_count++] = byte;
         }
 
         if (byte_count >= 2) {
+            volatile void *setup_buffer = usb_ep0out_buffer;
             usb_ep_0_in_dtb_write(1);
             data_offset = 0;
             current_length = 0;
             current_data = NULL;
-            wait_reply = usb_setup((void *)usb_ep0out_buffer);
+            byte_count -= 2;
+            // XXX TERRIBLE HACK!
+            // Because the epfifo backend doesn't have any concept of packet boundaries,
+            // sometimes one or two of the bytes from the CRC on the "ACK" from the previous
+            // "Get Descriptor" will be stuck on the front of this request.
+            // This can happen if, for example, we get the OUT from that and the OUT from
+            // the subsequent SETUP packet without first handling that.
+            // Since all SETUP packets are 8 bytes (in this tester), we'll simply clamp the
+            // SETUP data packet to be the last 8 bytes received (minus the 2-byte CRC16).
+            // This is horrible and should be fixed in hardware.
+            if (byte_count > 8)
+                setup_buffer += byte_count - 8;
+            wait_reply = usb_setup((const struct usb_setup_request *)setup_buffer);
         }
         usb_ep_0_out_ev_pending_write(ep0out_pending);
         usb_ep_0_out_respond_write(EPF_ACK);

@@ -160,6 +160,11 @@ struct usb_cdc_notification {
 
 int cdc_connected();
 void cdc_set_connected(int is_connected);
+void put_hex(uint32_t val);
+void put_hex_byte(uint8_t val);
+void put_string(const char *str);
+void put_char(char character);
+void flush_serial(void);
 
 #endif
 
