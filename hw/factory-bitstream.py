@@ -336,21 +336,24 @@ class SBLED(Module, AutoCSR):
         self.ctrl = CSRStorage(4)
 
         self.bypass = CSRStorage(3)
-        self.pwm_count = CSRStorage(24)
+        self.pulse = CSRStorage(24)
+        self.duty = CSRStorage(24)
         self.sent_pulses = CSRStatus(32)
         self.detected_pulses = CSRStatus(32)
 
         count = Signal(24)
         led_value = Signal()
+        last_led_value = Signal()
         rgb = Signal(3)
         sent_pulses = Signal(32)
         detected_pulses = Signal(32)
         rgba_drv = Signal(3)
 
         self.sync += [
+            last_led_value.eq(led_value),
             # When the PWM count is updated, reset everything and
             # copy the results out.
-            If(self.pwm_count.re,
+            If(self.pulse.re,
                 count.eq(0),
 
                 self.sent_pulses.status.eq(sent_pulses),
@@ -359,18 +362,29 @@ class SBLED(Module, AutoCSR):
                 self.detected_pulses.status.eq(detected_pulses),
                 detected_pulses.eq(0),
 
-            ).Elif(count < self.pwm_count.storage,
-                count.eq(count + 1),
+                led_value.eq(0),
 
-            ).Else(
-                count.eq(0),
-                led_value.eq(~led_value),
-                If(led_value,
-                    sent_pulses.eq(sent_pulses + 1),
-                    If(detected_pulse,
-                        detected_pulses.eq(detected_pulses + 1),
+            ).Elif(count < self.pulse.storage,
+                count.eq(count + 1),
+                If(count < self.duty.storage,
+                    led_value.eq(0),
+                ).Else(
+                    led_value.eq(1),
+
+                    # On the transition from 0 > 1, increment the counter
+                    # and see if the LED has changed.  If so, increment
+                    # the number of detected pulses.
+                    If(~last_led_value,
+                        sent_pulses.eq(sent_pulses + 1),
+                        If(detected_pulse,
+                            detected_pulses.eq(detected_pulses + 1),
+                        ),
                     ),
                 ),
+            ).Else(
+                # Reset the count once it gets greater than "Pulse"
+                count.eq(0),
+                led_value.eq(0),
             ),
         ]
 
@@ -404,7 +418,7 @@ class SBLED(Module, AutoCSR):
             o_RGB2 = pads.rgb2,
             p_CURRENT_MODE = "0b1", # Half current
             p_RGB0_CURRENT = "0b000011", # 4 mA
-            p_RGB1_CURRENT = "0b000001", # 2 mA
+            p_RGB1_CURRENT = "0b000011", # 4 mA
             p_RGB2_CURRENT = "0b000011", # 4 mA
         )
 
