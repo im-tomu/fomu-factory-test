@@ -16,6 +16,9 @@ void cdc_set_connected(int is_connected)
 
 void _putchar(char character)
 {
+    if (character == '\n')
+        _putchar('\r');
+
     // Wait for buffer to be empty
     while (usb_ep_2_in_respond_read() == EPF_ACK)
         ;

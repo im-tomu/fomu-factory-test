@@ -22,13 +22,11 @@ void isr(void)
 static void init(void)
 {
     rgb_init();
-    spi = spiAlloc();
-    spiInit(spi);
+    spi_init();
     irq_setmask(0);
     irq_setie(1);
     usb_init();
     time_init();
-
 }
 
 int main(int argc, char **argv)

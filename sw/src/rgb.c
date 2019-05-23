@@ -34,6 +34,7 @@ static enum {
     WRITING,
     ERROR,
     DONE,
+    OFF,
 } rgb_mode;
 
 static void rgb_write(uint8_t value, uint8_t addr) {
@@ -86,4 +87,8 @@ void rgb_mode_error(void) {
 
 void rgb_mode_done(void) {
     rgb_switch_mode(DONE, 8, 8, 2, 3, 0x14/4, 0xff/4, 0x44/4);
+}
+
+void rgb_mode_off(void) {
+    rgb_switch_mode(OFF, 0, 0, 0, 0, 0, 0, 0);    
 }

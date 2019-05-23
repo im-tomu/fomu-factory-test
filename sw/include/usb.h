@@ -33,7 +33,7 @@ void usb_idle(void);
 void usb_disconnect(void);
 
 int usb_irq_happened(void);
-void usb_setup(const struct usb_setup_request *setup);
+int usb_setup(const struct usb_setup_request *setup);
 void usb_send(const void *data, int total_count);
 void usb_ack_in(void);
 void usb_ack_out(void);

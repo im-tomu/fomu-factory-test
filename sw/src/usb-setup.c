@@ -8,16 +8,30 @@
 static uint8_t reply_buffer[8];
 static uint8_t usb_configuration = 0;
 
-void usb_setup(const struct usb_setup_request *setup)
+int usb_setup(const struct usb_setup_request *setup)
 {
     const uint8_t *data = NULL;
     uint32_t datalen = 0;
     const usb_descriptor_list_t *list;
+    uint32_t max_length = setup->wLength;//((setup->wLength >> 8) & 0xff) | ((setup->wLength << 8) & 0xff00);
 
     switch (setup->wRequestAndType)
     {
 
+    // case 0x21a1: // Get Line Coding
+    //     reply_buffer[0] = 0x80;
+    //     reply_buffer[1] = 0x25;
+    //     reply_buffer[2] = 0x00;
+    //     reply_buffer[3] = 0x00;
+    //     reply_buffer[4] = 0x00;
+    //     reply_buffer[5] = 0x00;
+    //     reply_buffer[6] = 0x08;
+    //     data = reply_buffer;
+    //     datalen = 7;
+    //     break;
+
     case 0x2021: // Set Line Coding
+    case 0x20A1: // Set Line Coding
         break;
 
     case 0x2221: // Set control line state
@@ -49,7 +63,7 @@ void usb_setup(const struct usb_setup_request *setup)
         if (setup->wIndex > 0)
         {
             usb_err();
-            return;
+            return 0;
         }
         reply_buffer[0] = 0;
         reply_buffer[1] = 0;
@@ -64,7 +78,7 @@ void usb_setup(const struct usb_setup_request *setup)
         {
             // TODO: do we need to handle IN vs OUT here?
             usb_err();
-            return;
+            return 0;
         }
         break;
 
@@ -73,7 +87,7 @@ void usb_setup(const struct usb_setup_request *setup)
         {
             // TODO: do we need to handle IN vs OUT here?
             usb_err();
-            return;
+            return 0;
         }
         // XXX: Should we set the stall bit?
         // USB->DIEP0CTL |= USB_DIEP_CTL_STALL;
@@ -104,20 +118,20 @@ void usb_setup(const struct usb_setup_request *setup)
             }
         }
         usb_err();
-        return;
+        return 0;
 
     default:
         usb_err();
-        return;
+        return 0;
     }
 
 send:
     if (data && datalen) {
-        if (datalen > setup->wLength)
-            datalen = setup->wLength;
+        if (datalen > max_length)
+            datalen = max_length;
         usb_send(data, datalen);
     }
     else
         usb_ack_in();
-    return;
+    return 2;
 }

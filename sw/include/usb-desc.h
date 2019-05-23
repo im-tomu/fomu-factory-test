@@ -62,7 +62,7 @@ struct usb_string_descriptor_struct {
 #define PRODUCT_NAME              u"Fomu Factory Test " GIT_VERSION
 #define PRODUCT_NAME_LEN          sizeof(PRODUCT_NAME)
 #define EP0_SIZE                  64
-#define NUM_INTERFACE             1
+#define NUM_INTERFACE             2
 #define CONFIG_DESC_SIZE          67
 #define USB_DT_INTERFACE_SIZE			9
 
