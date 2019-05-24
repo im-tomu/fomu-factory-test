@@ -1,0 +1,5 @@
+[Test]
+ExecStart=fomu-flash -f evt-tester-bitstream.bin
+Name=Load Tester Bitstream
+Description=Use fomu-flash to load the tester bitstream
+Timeout=1

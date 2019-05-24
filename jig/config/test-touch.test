@@ -1,0 +1,6 @@
+[Test]
+ExecStart=grep -c '^TOUCH: .*Pass\s*$' /tmp/monitor-log.txt
+Name=Verify Touch Pads
+Description=Look for "TOUCH: Pass" in the monitor log
+Requires=load-tester-bitstream,run-all-tests
+Timeout=3

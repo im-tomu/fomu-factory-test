@@ -1,0 +1,7 @@
+[Test]
+ExecStart=./uart-monitor /tmp/monitor-log.txt
+Name=Run all tests
+Description=Run all tests and log the output to a file
+Requires=load-tester-bitstream
+Required=load-tester-bitstream
+Timeout=2

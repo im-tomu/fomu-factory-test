@@ -1,0 +1,5 @@
+[Interface]
+Name=Front panel LEDs
+Description=Shows test status on the LEDs
+Format=text
+ExecStart=./led-interface.sh

@@ -1,0 +1,6 @@
+[Test]
+ExecStart=grep -c '^RGBR: .*Pass\s*$' /tmp/monitor-log.txt
+Name=Verify Red LED
+Description=Look for "RGBR: Pass" in the monitor log
+Requires=load-tester-bitstream,run-all-tests
+Timeout=1

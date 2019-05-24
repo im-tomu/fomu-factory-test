@@ -1,0 +1,6 @@
+[Test]
+ExecStart=grep -c '^RGBB: .*Pass\s*$' /tmp/monitor-log.txt
+Name=Verify Blue LED
+Description=Look for "RGBB: Pass" in the monitor log
+Requires=load-tester-bitstream,run-all-tests
+Timeout=1

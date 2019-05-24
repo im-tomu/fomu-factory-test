@@ -1,0 +1,6 @@
+[Test]
+ExecStart=/bin/true
+Name=Run all tests
+Description=Make sure all tests complete successfully
+Requires=test-rgbb,  test-rgbg,  test-rgbr,  test-spi,  test-touch
+Timeout=4

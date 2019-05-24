@@ -1,0 +1,5 @@
+[Logger]
+Name=File Logger
+Description=Write log messages out to a file
+ExecStart=/bin/sh -c "cat > /tmp/ltc-log.json"
+Format=json

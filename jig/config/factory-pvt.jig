@@ -1,0 +1,6 @@
+[Jig]
+Name=Raspberry Pi Fomu PVT Jig
+Description=Fomu factory jig running on a Raspberry Pi, designed to burn and test Fomu PVT
+TestFile=/etc
+DefaultScenario=complete
+DefaultWorkingDirectory=../bin
