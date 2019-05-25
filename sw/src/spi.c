@@ -640,9 +640,6 @@ int spiBeginWrite(uint32_t addr, const void *v_data, unsigned int count) {
 uint8_t spiReset(void) {
 	// XXX You should check the "Ready" bit before doing this!
 
-	// Shift to QPI mode, then back to Single mode, to ensure
-	// we're actually in Single mode.
-	spiSetType(ST_QPI);
 	spiSetType(ST_SINGLE);
 
 	spiBegin();
