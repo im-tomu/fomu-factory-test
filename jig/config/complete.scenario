@@ -1,5 +1,5 @@
 [Scenario]
 Name=Program and test Everything
 Description=Load the test bitstream, run tests, then load the final bitstream
-Tests=all-tests,load-final-bitstream,verify-final-bitstream
-Timeout=5
+Tests=all-tests,verify-final-bitstream,final
+Timeout=10

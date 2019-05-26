@@ -1,5 +1,5 @@
 [Test]
-ExecStart=fomu-flash -v pvt-top-multiboot.bin
+ExecStart=/bin/sh -c "timeout 3 fomu-flash -q -v pvt-top-multiboot.bin"
 Name=Verify Final Bitstream
 Description=Use fomu-flash to verify the final bitstream
 Requires=load-final-bitstream
