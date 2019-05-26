@@ -137,8 +137,13 @@ static uint32_t test_one_color(int color)
 
     rgb_bypass_write(1 << color);
     rgb_mode_off();
-    rgb_duty_write(SYSTEM_CLOCK_FREQUENCY / 10000 * 1);
-    rgb_pulse_write(SYSTEM_CLOCK_FREQUENCY / 1000 * 1);
+
+    // Amount of time it's off (900 us)
+    rgb_duty_write(SYSTEM_CLOCK_FREQUENCY / 10000 * 9);
+
+    // Total amount of time for one pulse (1000 us or 1 ms)
+    rgb_pulse_write(SYSTEM_CLOCK_FREQUENCY / 10000 * 10);
+
     put_string("RGB");
     put_char(color_names[color]);
     put_string(": ");
