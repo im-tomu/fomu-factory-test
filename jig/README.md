@@ -24,3 +24,9 @@ LEDs 2, 3, and 4 form a pattern that indicate which test failed:
 | Test RGB             |     x     |     x     |           | TOUCH2 or the RGB LED are not assembled correctly |
 | Test Touch           |           |     x     |     x     | TOUCH1, TOUCH3, or TOUCH4 are not assembled correctly |
 | Final Bitstream      |           |           |     x     | The final program could not be loaded |
+
+## Connecting the Jig
+
+Use the following wiring diagram to attach the jig to the Raspberry Pi:
+
+![wiring diagram](jig-pinout.png "Raspberry Pi wiring diagram")
