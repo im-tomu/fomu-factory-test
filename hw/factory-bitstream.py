@@ -343,14 +343,18 @@ class SBLED(Module, AutoCSR):
 
         count = Signal(24)
         led_value = Signal()
-        last_led_value = Signal()
         rgb = Signal(3)
         sent_pulses = Signal(32)
         detected_pulses = Signal(32)
         rgba_drv = Signal(3)
 
+        last_detected_val = Signal()
+
         self.sync += [
-            last_led_value.eq(led_value),
+            If(last_detected_val != detected_pulse,
+                detected_pulses.eq(detected_pulses + 1),
+            ),
+            last_detected_val.eq(detected_pulse),
             # When the PWM count is updated, reset everything and
             # copy the results out.
             If(self.pulse.re,
@@ -368,18 +372,11 @@ class SBLED(Module, AutoCSR):
                 count.eq(count + 1),
                 If(count < self.duty.storage,
                     led_value.eq(0),
+                ).Elif(count == self.duty.storage,
+                    led_value.eq(1),
+                    sent_pulses.eq(sent_pulses + 1),
                 ).Else(
                     led_value.eq(1),
-
-                    # On the transition from 0 > 1, increment the counter
-                    # and see if the LED has changed.  If so, increment
-                    # the number of detected pulses.
-                    If(~last_led_value,
-                        sent_pulses.eq(sent_pulses + 1),
-                        If(detected_pulse,
-                            detected_pulses.eq(detected_pulses + 1),
-                        ),
-                    ),
                 ),
             ).Else(
                 # Reset the count once it gets greater than "Pulse"
@@ -387,6 +384,47 @@ class SBLED(Module, AutoCSR):
                 led_value.eq(0),
             ),
         ]
+
+
+        # last_led_value = Signal()
+        # self.sync += [
+        #     last_led_value.eq(led_value),
+        #     # When the PWM count is updated, reset everything and
+        #     # copy the results out.
+        #     If(self.pulse.re,
+        #         count.eq(0),
+
+        #         self.sent_pulses.status.eq(sent_pulses),
+        #         sent_pulses.eq(0),
+
+        #         self.detected_pulses.status.eq(detected_pulses),
+        #         detected_pulses.eq(0),
+
+        #         led_value.eq(0),
+
+        #     ).Elif(count < self.pulse.storage,
+        #         count.eq(count + 1),
+        #         If(count < self.duty.storage,
+        #             led_value.eq(0),
+        #         ).Else(
+        #             led_value.eq(1),
+
+        #             # On the transition from 0 > 1, increment the counter
+        #             # and see if the LED has changed.  If so, increment
+        #             # the number of detected pulses.
+        #             If(~last_led_value,
+        #                 sent_pulses.eq(sent_pulses + 1),
+        #                 If(detected_pulse,
+        #                     detected_pulses.eq(detected_pulses + 1),
+        #                 ),
+        #             ),
+        #         ),
+        #     ).Else(
+        #         # Reset the count once it gets greater than "Pulse"
+        #         count.eq(0),
+        #         led_value.eq(0),
+        #     ),
+        # ]
 
         # Wire up the bypasses
         self.comb += [
@@ -417,6 +455,9 @@ class SBLED(Module, AutoCSR):
             o_RGB1 = pads.rgb1,
             o_RGB2 = pads.rgb2,
             p_CURRENT_MODE = "0b1", # Half current
+            # p_RGB0_CURRENT = "0b111111", # 12 mA
+            # p_RGB1_CURRENT = "0b111111", # 12 mA
+            # p_RGB2_CURRENT = "0b111111", # 12 mA
             p_RGB0_CURRENT = "0b000011", # 4 mA
             p_RGB1_CURRENT = "0b000011", # 4 mA
             p_RGB2_CURRENT = "0b000011", # 4 mA
@@ -858,7 +899,7 @@ class BaseSoC(SoCCore):
         # and the "-dffe_min_ce_use 4" flag prevents Yosys from generating a
         # Clock Enable signal for a LUT that has fewer than 4 flip-flops.
         # This increases density, and lets us use the FPGA more efficiently.
-        platform.toolchain.nextpnr_yosys_template[2] += " -relut -dffe_min_ce_use 4"
+        platform.toolchain.nextpnr_yosys_template[2] += " -relut -dffe_min_ce_use 5"
         if use_dsp:
             platform.toolchain.nextpnr_yosys_template[2] += " -dsp"
 
