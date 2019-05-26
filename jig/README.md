@@ -7,11 +7,11 @@ apt install wiringpi
 
 There are five LEDs on the front.  The indicate which subsystems work.
 
-1: An error occurred
-2: Test Error
-3: Test Error
-4: Test Error
-5: Tester is IDLE (also, tester is READY)
+1. An error occurred
+2. Test Error
+3. Test Error
+4. Test Error
+5. Tester is IDLE (also, tester is READY)
 
 LEDs 2, 3, and 4 form a pattern that indicate which test failed:
 
