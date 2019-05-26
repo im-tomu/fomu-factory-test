@@ -64,9 +64,13 @@ gpio_setup() {
 }
 
 fail_test() {
+	led_off 2
+	led_off 3
+	led_off 4
+
 	case $1 in
-	load-tester-bitstream) ;;
-	run-all-tests)          led_on 2 ;;
+	load-tester-bitstream)                                 ;;
+	run-all-tests)          led_on 2                       ;;
 	validate-spi)                      led_on 3 ; led_on 4 ;;
 	test-spi)                          led_on 3 ;;
 	test-rgbg)              led_on 2 ; led_on 3 ;;
@@ -86,6 +90,9 @@ do
 	if echo "${line}" | grep -iq '^start'
 	then
 		all_off
+		led_on 2
+		led_on 3
+		led_on 4
 		failures=0
 	elif echo "${line}" | grep -iq '^fail'
 	then
@@ -101,7 +108,9 @@ do
 		result=$(echo ${line} | awk '{print $3}')
 		if [ ${result} -ge 200 -a ${result} -lt 300 ]
 		then
-			led_on 5
+			led_off 2
+			led_off 3
+			led_off 4
 		else
 			led_on 1
 		fi
