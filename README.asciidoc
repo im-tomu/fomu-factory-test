@@ -22,11 +22,11 @@ Finally, this driver software loads firmware and test programs onto the Fomu dev
 
 ## Usage - Initial Setup
 
-Download the [Fomu Rpi Image](https://github.com/im-tomu/fomu-pi-gen/releases/latest) and write it onto an SD card.  Then follow the instructions in the [jig(jig/) directory.
+Download the https://github.com/im-tomu/fomu-pi-gen/releases/latest[Fomu Rpi Image] and write it onto an SD card.  Then follow the instructions in the link:jig/[jig] directory.
 
 ## Building Test Bitstream
 
-To build the test bitstream, go into the [hw](hw/) directory and run `factory-bitstream.py`.  You'll need to specify a board revision, as well as a boot source.  You may also have better luck with the `HeAP` placer:
+To build the test bitstream, go into the link:hw/[hw] directory and run `factory-bitstream.py`.  You'll need to specify a board revision, as well as a boot source.  You may also have better luck with the `HeAP` placer:
 
 ```
 $ python3 factory-bitstream.py --boot-source bios --revision evt --placer heap
@@ -44,7 +44,7 @@ $ python3 factory-bitstream.py --boot-source rand --revision evt --placer heap
 
 Then, copy `build/gateware/top.bin` to your target Raspberry Pi as usual.
 
-Next, go into the `sw/` directory and build the program by typing "make". Copy the resulting `factory-test.bin` over.
+Next, go into the link:sw/[sw] directory and build the program by typing "make". Copy the resulting `factory-test.bin` over.
 
 Finally, log on to the Raspberry Pi and load the bitstream into the target Fomu, but replace the random program code with the contents of `factory-test.bin`:
 
