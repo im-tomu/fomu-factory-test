@@ -1,0 +1,5 @@
+[Test]
+ExecStart=./validate-spi.sh
+Name=Validate SPI
+Description=Validate that the SPI part number is what we expect
+Timeout=1
