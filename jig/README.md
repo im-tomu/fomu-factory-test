@@ -27,6 +27,10 @@ LEDs 2, 3, and 4 form a pattern that indicate which test failed:
 
 ## Connecting the Jig
 
-Use the following wiring diagram to attach the jig to the Raspberry Pi:
+Connect TOUCH1, TOUCH3, and TOUCH4 together.  Connect TOUCH2 to a light sensor board.
+
+Cut a USB cable in half and connect 5V, GND, USB_DN and USB_DP to the cable.  Plug this cable into the Raspberry Pi.
+
+Finally, use the following wiring diagram to attach the jig to the Raspberry Pi:
 
 ![wiring diagram](jig-pinout.png "Raspberry Pi wiring diagram")
