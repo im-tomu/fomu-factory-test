@@ -1,0 +1,6 @@
+[Test]
+ExecStart=true
+Name=Dummy Event
+Description=Might be necessary
+Requires=load-final-bitstream,verify-final-bitstream
+Timeout=1
