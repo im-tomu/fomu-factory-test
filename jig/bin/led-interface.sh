@@ -6,6 +6,12 @@ led_3=6
 led_4=5
 led_5=0
 
+if [ "x$(which gpio)" = "x" ]
+then
+	echo "No 'gpio' command found! Install wiringpi."
+	exit 1
+fi
+
 all_off() {
 	gpio -g write ${led_1} 0
 	gpio -g write ${led_2} 0
