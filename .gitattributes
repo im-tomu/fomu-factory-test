@@ -19,3 +19,4 @@ Makefile text eol=lf
 *.jpg binary
 *.bin binary
 *.elf binary
+*.bin binary
