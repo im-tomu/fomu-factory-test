@@ -549,7 +549,7 @@ int spiSetType(enum spi_type type) {
 		}
 
 		// Enable QE bit
-		spiWriteStatus(2, spiReadStatus(2) | (1 << 1));
+		spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
 
 		spi.type = type;
 		spi_set_state(SS_QUAD_TX);
@@ -557,7 +557,7 @@ int spiSetType(enum spi_type type) {
 
 	case ST_QPI:
 		// Enable QE bit
-		spiWriteStatus(2, spiReadStatus(2) | (1 << 1));
+		spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
 
 		spiBegin();
 		spiCommand(0x38);		// Enter QPI Mode
@@ -699,7 +699,7 @@ int spi_init(void) {
 }
 
 void spiEnableQuad(void) {
-	spiWriteStatus(2, spiReadStatus(2) | (1 << 1));
+	spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
 }
 
 void spiSetPin(enum spi_pin pin, int val) {
