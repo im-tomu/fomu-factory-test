@@ -3,4 +3,4 @@ ExecStart=/bin/sh -c "fomu-flash -f usb_disconnect.bin ; sleep .5; fomu-flash -f
 Name=Load Tester Bitstream
 Description=Use fomu-flash to load the tester bitstream. Do it twice, to work around the fact that pins float in an unconfigured Fomu, which cause enumeration to get stuck.
 Requires=validate-spi
-Timeout=2
+Timeout=5
