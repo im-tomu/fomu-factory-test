@@ -1,6 +1,6 @@
 .obj/
-.swp
-.swo
+*.swp
+*.swo
 *~
 *.bin
 *.dfu
