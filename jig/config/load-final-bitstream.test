@@ -3,4 +3,4 @@ ExecStart=fomu-flash -q -w pvt-top-multiboot.bin
 Name=Load Final Bitstream
 Description=Use fomu-flash to load the final bitstream
 Requires=all-tests
-Timeout=3
+Timeout=5
