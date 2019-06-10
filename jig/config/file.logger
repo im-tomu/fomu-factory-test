@@ -1,5 +1,5 @@
 [Logger]
 Name=File Logger
 Description=Write log messages out to a file
-ExecStart=/bin/sh -c "cat >> /home/fomu/fomu-test-log.json"
+ExecStart=/bin/sh -c "cat >> ../../fomu-test-log.json"
 Format=json
