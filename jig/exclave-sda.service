@@ -1,0 +1,22 @@
+# copy this file to /etc/systemd/system
+# then run:
+#  sudo systemctl start exclave-sda
+#  sudo systemctl stop exclave-sda
+#  sudo systemctl enable exclave-sda
+
+[Unit]
+Description=Exclave tester automation framework service
+BindsTo=dev-sda.device
+
+[Service]
+User=root
+ExecStartPre=/usr/bin/test -e /dev/sda
+ExecStartPre=/bin/mkdir -p /tmp/disk
+ExecStartPre=/bin/mount /dev/sda /tmp/disk
+ExecStart=/tmp/disk/jig/exclave -c /tmp/disk/jig/config
+ExecStopPost=/bin/umount /tmp/disk
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target
