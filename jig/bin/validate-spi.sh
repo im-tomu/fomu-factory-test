@@ -2,7 +2,7 @@
 
 infofile=/tmp/spi-info.txt
 rm -f $infofile
-fomu-flash -t 4 -i | tee $infofile
+./fomu-flash -t 4 -i | tee $infofile
 
 # Manufacturer ID: Macronix (c2)
 # Memory model: MX25R1635F (28)
