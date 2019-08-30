@@ -2,7 +2,7 @@
 #include <usb-cdc.h>
 #include <spi.h>
 #include <usb.h>
-#include <fomu/csr.h>
+#include <generated/csr.h>
 #include <time.h>
 #include <rgb.h>
 
@@ -14,7 +14,15 @@ static uint32_t test_spi(void)
     int errors = 0;
 
     struct spi_id id = spiId();
+#if defined(CONFIG_FOMU_REV_PVT)
+#pragma warn "PVT Revision"
     spiSetType(ST_QUAD);
+#elif defined(CONFIG_FOMU_REV_HACKER)
+#pragma warn "Hacker Revision"
+    spiSetType(ST_SINGLE);
+#else
+#error "Unrecognized Fomu revision"
+#endif
     put_string("SPI: Manufacturer ");
     put_hex_byte(id.manufacturer_id);
     put_string(" / ");

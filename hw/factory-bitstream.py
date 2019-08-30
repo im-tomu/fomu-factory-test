@@ -6,7 +6,7 @@
 LX_DEPENDENCIES = ["riscv", "icestorm", "yosys"]
 
 # Import lxbuildenv to integrate the deps/ directory
-import lxbuildenv
+import sys; import os; sys.path.insert(0, os.path.dirname(__file__)); import lxbuildenv
 
 # Disable pylint's E1101, which breaks completely on migen
 #pylint:disable=E1101
@@ -315,6 +315,7 @@ class FirmwareROM(wishbone.SRAM):
 
 class Platform(LatticePlatform):
     def __init__(self, revision=None, toolchain="icestorm"):
+        self.revision = revision
         if revision == "evt":
             LatticePlatform.__init__(self, "ice40-up5k-sg48", _io_evt, _connectors, toolchain="icestorm")
         elif revision == "pvt" or revision == "dvt":
@@ -680,7 +681,7 @@ class BBSpi(Module, AutoCSR):
         ]
 
 class Version(Module, AutoCSR):
-    def __init__(self):
+    def __init__(self, model, parent):
         def makeint(i, base=10):
             try:
                 return int(i, base=base)
@@ -757,6 +758,7 @@ class Version(Module, AutoCSR):
         self.gitrev = CSRStatus(32)
         self.gitextra = CSRStatus(10)
         self.dirty = CSRStatus(1)
+        self.model = CSRStatus(8)
 
         (major, minor, rev, gitrev, gitextra, dirty) = get_gitver()
         self.comb += [
@@ -767,6 +769,24 @@ class Version(Module, AutoCSR):
             self.gitextra.status.eq(gitextra),
             self.dirty.status.eq(dirty),
         ]
+        if model == "evt":
+            parent.config["FOMU_REV"] = "EVT"
+            parent.config["FOMU_REV_EVT"] = 1
+            self.comb += self.model.status.eq(0x45) # 'E'
+        elif model == "dvt":
+            parent.config["FOMU_REV"] = "DVT"
+            parent.config["FOMU_REV_DVT"] = 1
+            self.comb += self.model.status.eq(0x44) # 'D'
+        elif model == "pvt":
+            parent.config["FOMU_REV"] = "PVT"
+            parent.config["FOMU_REV_PVT"] = 1
+            self.comb += self.model.status.eq(0x50) # 'P'
+        elif model == "hacker":
+            parent.config["FOMU_REV"] = "HACKER"
+            parent.config["FOMU_REV_HACKER"] = 1
+            self.comb += self.model.status.eq(0x48) # 'H'
+        else:
+            self.comb += self.model.status.eq(0x3f) # '?'
 
 
 class BaseSoC(SoCCore):
@@ -892,7 +912,7 @@ class BaseSoC(SoCCore):
         # Add GPIO pads for the touch buttons
         self.submodules.touch = TouchPads(platform.request("touch"))
         self.submodules.rgb = SBLED(platform.request("led"), self.touch.i.status[1])
-        self.submodules.version = Version()
+        self.submodules.version = Version(platform.revision, self)
 
         # Add "-relut -dffe_min_ce_use 4" to the synth_ice40 command.
         # The "-reult" adds an additional LUT pass to pack more stuff in,
