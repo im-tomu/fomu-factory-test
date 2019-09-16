@@ -2,6 +2,7 @@
 #include <riscv.h>
 #include <string.h>
 #include <usb.h>
+#include <fomu/csr.h>
 
 #ifdef CSR_USB_EP_0_OUT_EV_PENDING_ADDR
 
@@ -26,6 +27,14 @@ static volatile int data_offset;
 static volatile int data_to_send;
 static int next_packet_is_empty;
 
+static volatile int have_new_address;
+static volatile uint8_t new_address;
+
+// Firmware versions < 1.9 didn't have usb_address_write()
+static inline void usb_set_address_wrapper(uint8_t address) {
+    usb_address_write(address);
+}
+
 void usb_idle(void) {
     usb_ep_0_out_ev_enable_write(0);
     usb_ep_0_in_ev_enable_write(0);
@@ -44,9 +53,11 @@ void usb_disconnect(void) {
     usb_ep_0_in_ev_enable_write(0);
     irq_setmask(irq_getmask() & ~(1 << USB_INTERRUPT));
     usb_pullup_out_write(0);
+    usb_set_address_wrapper(0);
 }
 
 void usb_connect(void) {
+    usb_set_address_wrapper(0);
     usb_ep_0_out_ev_pending_write(usb_ep_0_out_ev_enable_read());
     usb_ep_0_in_ev_pending_write(usb_ep_0_in_ev_pending_read());
     usb_ep_0_out_ev_enable_write(USB_EV_PACKET | USB_EV_ERROR);
@@ -170,6 +181,10 @@ void usb_isr(void) {
         }
         usb_ep_0_in_respond_write(EPF_NAK);
         usb_ep_0_in_ev_pending_write(ep0in_pending);
+        if (have_new_address) {
+            have_new_address = 0;
+            usb_set_address_wrapper(new_address);
+        }
     }
 
     if (ep1in_pending) {
@@ -292,6 +307,11 @@ int usb_recv(void *buffer, unsigned int buffer_len) {
     return 0;
 }
 #endif
+
+void usb_set_address(uint8_t new_address_) {
+    new_address = new_address_;
+    have_new_address = 1;
+}
 
 void usb_poll(void) {
     process_tx();
