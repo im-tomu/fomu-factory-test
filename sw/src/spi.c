@@ -362,80 +362,6 @@ void spiReadSecurity(uint8_t sr, uint8_t security[256]) {
 	spiEnd();
 }
 
-void spiWriteStatus(uint8_t sr, uint8_t val) {
-
-	switch (sr) {
-	case 1:
-		if (!(spi.quirks & SQ_SKIP_SR_WEL)) {
-			spiBegin();
-			spiCommand(0x06);
-			spiEnd();
-		}
-
-		spiBegin();
-		spiCommand(0x50);
-		spiEnd();
-
-		spiBegin();
-		spiCommand(0x01);
-		spiCommand(val);
-		spiEnd();
-		break;
-
-	case 2: {
-		uint8_t sr1 = 0x00;
-		if (spi.quirks & SQ_SR2_FROM_SR1)
-			sr1 = spiReadStatus(1);
-
-		if (!(spi.quirks & SQ_SKIP_SR_WEL)) {
-			spiBegin();
-			spiCommand(0x06);
-			spiEnd();
-		}
-
-
-		spiBegin();
-		spiCommand(0x50);
-		spiEnd();
-
-		spiBegin();
-		if (spi.quirks & SQ_SR2_FROM_SR1) {
-			spiCommand(0x01);
-			spiCommand(sr1);
-			spiCommand(val);
-		}
-		else {
-			spiCommand(0x31);
-			spiCommand(val);
-		}
-		spiEnd();
-		break;
-	}
-
-	case 3:
-		if (!(spi.quirks & SQ_SKIP_SR_WEL)) {
-			spiBegin();
-			spiCommand(0x06);
-			spiEnd();
-		}
-
-
-		spiBegin();
-		spiCommand(0x50);
-		spiEnd();
-
-		spiBegin();
-		spiCommand(0x11);
-		spiCommand(val);
-		spiEnd();
-		break;
-
-	default:
-		fprintf(stderr, "unrecognized status register: %d\n", sr);
-		break;
-	}
-}
-
 struct spi_id spiId(void) {
 	return spi.id;
 }
@@ -548,16 +474,11 @@ int spiSetType(enum spi_type type) {
 			spiEnd();
 		}
 
-		// Enable QE bit
-		spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
-
 		spi.type = type;
 		spi_set_state(SS_QUAD_TX);
 		break;
 
 	case ST_QPI:
-		// Enable QE bit
-		spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
 
 		spiBegin();
 		spiCommand(0x38);		// Enter QPI Mode
@@ -696,10 +617,6 @@ int spi_init(void) {
 		spi.quirks |= SQ_SKIP_SR_WEL | SQ_SECURITY_NYBBLE_SHIFT;
 
 	return 0;
-}
-
-void spiEnableQuad(void) {
-	spiWriteStatus(1, spiReadStatus(1) | (1 << 6));
 }
 
 void spiSetPin(enum spi_pin pin, int val) {

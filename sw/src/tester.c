@@ -14,7 +14,9 @@ static uint32_t test_spi(void)
     int errors = 0;
 
     struct spi_id id = spiId();
-    spiSetType(ST_QUAD);
+    // "Adesto"-branded hacker boards don't support quad
+    if (id.manufacturer_id != 0x1f)
+        spiSetType(ST_QUAD);
     put_string("SPI: Manufacturer ");
     put_hex_byte(id.manufacturer_id);
     put_string(" / ");
