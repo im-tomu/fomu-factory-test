@@ -65,6 +65,18 @@ gpio_setup() {
 	gpio -g mode ${led_3} out
 	gpio -g mode ${led_4} out
 	gpio -g mode ${led_5} out
+	for i in $(seq 1 5)
+	do
+		all_off
+		led_on $i
+		sleep .2
+	done
+
+	all_off
+	led_on 1
+	led_on 2
+	sleep 1
+
 	all_off
 	led_on 5
 }
