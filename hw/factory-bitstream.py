@@ -169,13 +169,11 @@ _io_hacker = [
 _connectors = []
 
 class _CRG(Module):
-    def __init__(self, platform, use_pll):
+    def __init__(self, platform):
         clk48_raw = platform.request("clk48")
-        clk12_raw = Signal()
-        clk48 = Signal()
         clk12 = Signal()
 
-        reset_delay = Signal(13, reset=4095)
+        reset_delay = Signal(12, reset=4095)
         self.clock_domains.cd_por = ClockDomain()
         self.reset = Signal()
 
@@ -186,9 +184,7 @@ class _CRG(Module):
         platform.add_period_constraint(self.cd_usb_48.clk, 1e9/48e6)
         platform.add_period_constraint(self.cd_sys.clk, 1e9/12e6)
         platform.add_period_constraint(self.cd_usb_12.clk, 1e9/12e6)
-        platform.add_period_constraint(clk48, 1e9/48e6)
         platform.add_period_constraint(clk48_raw, 1e9/48e6)
-        platform.add_period_constraint(clk12_raw, 1e9/12e6)
 
         # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
         # reset.
@@ -198,78 +194,42 @@ class _CRG(Module):
             self.cd_usb_12.rst.eq(reset_delay != 0),
         ]
 
-        if use_pll:
-            # Divide clk48 down to clk12, to ensure they're synchronized.
-            # By doing this, we avoid needing clock-domain crossing.
-            clk12_counter = Signal(2)
+        # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
+        # reset.
+        self.comb += [
+            self.cd_usb_48.rst.eq(reset_delay != 0),
+        ]
 
-            self.clock_domains.cd_usb_48_raw = ClockDomain()
+        self.comb += self.cd_usb_48.clk.eq(clk48_raw)
 
-            platform.add_period_constraint(self.cd_usb_48_raw.clk, 1e9/48e6)
-
-            # POR reset logic- POR generated from sys clk, POR logic feeds sys clk
-            # reset.
-            self.comb += [
-                self.cd_usb_48.rst.eq(reset_delay != 0),
-            ]
-
-            self.comb += self.cd_usb_48_raw.clk.eq(clk48_raw)
-            self.comb += self.cd_usb_48.clk.eq(clk48)
-
-            self.sync.usb_48_raw += clk12_counter.eq(clk12_counter + 1)
-
-            self.comb += clk12_raw.eq(clk12_counter[1])
-            self.specials += Instance(
-                "SB_GB",
-                i_USER_SIGNAL_TO_GLOBAL_BUFFER=clk12_raw,
-                o_GLOBAL_BUFFER_OUTPUT=clk12,
-            )
-
-            self.specials += Instance(
-                "SB_PLL40_CORE",
-                # Parameters
-                p_DIVR = 0,
-                p_DIVF = 3,
-                p_DIVQ = 2,
-                p_FILTER_RANGE = 1,
-                p_FEEDBACK_PATH = "PHASE_AND_DELAY",
-                p_DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED",
-                p_FDA_FEEDBACK = 15,
-                p_DELAY_ADJUSTMENT_MODE_RELATIVE = "FIXED",
-                p_FDA_RELATIVE = 0,
-                p_SHIFTREG_DIV_MODE = 1,
-                p_PLLOUT_SELECT = "SHIFTREG_0deg",
-                p_ENABLE_ICEGATE = 0,
-                # IO
-                i_REFERENCECLK = clk12,
-                # o_PLLOUTCORE = clk12,
-                o_PLLOUTGLOBAL = clk48,
-                #i_EXTFEEDBACK,
-                #i_DYNAMICDELAY,
-                #o_LOCK,
-                i_BYPASS = 0,
-                i_RESETB = 1,
-                #i_LATCHINPUTVALUE,
-                #o_SDO,
-                #i_SDI,
-            )
-        else:
-            self.specials += Instance(
-                "SB_GB",
-                i_USER_SIGNAL_TO_GLOBAL_BUFFER=clk48_raw,
-                o_GLOBAL_BUFFER_OUTPUT=clk48,
-            )
-            self.comb += self.cd_usb_48.clk.eq(clk48)
-
-            clk12_counter = Signal(2)
-            self.sync.usb_48 += clk12_counter.eq(clk12_counter + 1)
-
-            self.comb += clk12_raw.eq(clk12_counter[1])
-            self.specials += Instance(
-                "SB_GB",
-                i_USER_SIGNAL_TO_GLOBAL_BUFFER=clk12_raw,
-                o_GLOBAL_BUFFER_OUTPUT=clk12,
-            )
+        self.specials += Instance(
+            "SB_PLL40_CORE",
+            # Parameters
+            p_DIVR = 0,
+            p_DIVF = 15,
+            p_DIVQ = 5,
+            p_FILTER_RANGE = 1,
+            p_FEEDBACK_PATH = "SIMPLE",
+            p_DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED",
+            p_FDA_FEEDBACK = 15,
+            p_DELAY_ADJUSTMENT_MODE_RELATIVE = "FIXED",
+            p_FDA_RELATIVE = 0,
+            p_SHIFTREG_DIV_MODE = 1,
+            p_PLLOUT_SELECT = "GENCLK_HALF",
+            p_ENABLE_ICEGATE = 0,
+            # IO
+            i_REFERENCECLK = clk48_raw,
+            o_PLLOUTCORE = clk12,
+            # o_PLLOUTGLOBAL = clk12,
+            #i_EXTFEEDBACK,
+            #i_DYNAMICDELAY,
+            #o_LOCK,
+            i_BYPASS = 0,
+            i_RESETB = 1,
+            #i_LATCHINPUTVALUE,
+            #o_SDO,
+            #i_SDI,
+        )
 
         self.comb += self.cd_sys.clk.eq(clk12)
         self.comb += self.cd_usb_12.clk.eq(clk12)
@@ -797,7 +757,7 @@ class BaseSoC(SoCCore):
     interrupt_map.update(SoCCore.interrupt_map)
 
     def __init__(self, platform, boot_source="rand",
-                 debug=None, bios_file=None, use_pll=True,
+                 debug=None, bios_file=None,
                  use_dsp=False, placer=None, output_dir="build",
                  **kwargs):
         # Disable integrated RAM as we'll add it later
@@ -806,7 +766,7 @@ class BaseSoC(SoCCore):
         self.output_dir = output_dir
 
         clk_freq = int(12e6)
-        self.submodules.crg = _CRG(platform, use_pll=use_pll)
+        self.submodules.crg = _CRG(platform)
 
         SoCCore.__init__(self, platform, clk_freq, integrated_sram_size=0, with_uart=False, **kwargs)
 
@@ -938,16 +898,13 @@ def main():
         "--with-debug", help="enable debug support", choices=["usb", "uart", None]
     )
     parser.add_argument(
-        "--no-pll", help="disable pll -- this is easier to route, but may not work", action="store_true"
-    )
-    parser.add_argument(
         "--with-dsp", help="use dsp inference in yosys (not all yosys builds have -dsp)", action="store_true"
     )
     parser.add_argument(
         "--no-cpu", help="disable cpu generation for debugging purposes", action="store_true"
     )
     parser.add_argument(
-        "--placer", choices=["sa", "heap"], help="which placer to use in nextpnr"
+        "--placer", choices=["sa", "heap"], default="heap", help="which placer to use in nextpnr"
     )
     args = parser.parse_args()
 
@@ -970,7 +927,7 @@ def main():
     platform = Platform(revision=args.revision)
     soc = BaseSoC(platform, cpu_type=cpu_type, cpu_variant=cpu_variant,
                             debug=args.with_debug, boot_source=args.boot_source,
-                            bios_file=args.bios, use_pll=not args.no_pll,
+                            bios_file=args.bios,
                             use_dsp=args.with_dsp, placer=args.placer,
                             output_dir=output_dir)
     builder = Builder(soc, output_dir=output_dir, csr_csv="test/csr.csv", compile_software=compile_software)
