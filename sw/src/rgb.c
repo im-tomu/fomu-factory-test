@@ -1,6 +1,10 @@
 #include <rgb.h>
 #include <fomu/csr.h>
 
+static int ledda_init_done;
+
+// ICE40 LED Driver hard macro.
+// See http://www.latticesemi.com/-/media/LatticeSemi/Documents/ApplicationNotes/IK/ICE40LEDDriverUsageGuide.ashx?document_id=50668
 enum led_registers {
     LEDDCR0 = 8,
     LEDDBR = 9,
@@ -13,82 +17,59 @@ enum led_registers {
     LEDDPWRB = 3,
 };
 
-#define BREATHE_ENABLE (1 << 7)
-#define BREATHE_EDGE_ON (0 << 6)
-#define BREATHE_EDGE_BOTH (1 << 6)
-#define BREATHE_MODE_MODULATE (1 << 5)
-#define BREATHE_RATE(x) ((x & 7) << 0)
+// Control register definitions
+#define LEDDCR0_LEDDEN (1 << 7)
+#define LEDDCR0_FR250 (1 << 6)
+#define LEDDCR0_OUTPOL (1 << 5)
+#define LEDDCR0_OUTSKEW (1 << 4)
+#define LEDDCR0_QUICKSTOP (1 << 3)
+#define LEDDCR0_PWM_MODE (1 << 2)
+#define LEDDCR0_BRMSBEXT (1 << 0)
 
-#define RGB_SWITCH_MODE(x) do { \
-    if (rgb_mode == x) \
-        return; \
-    rgb_mode = x; \
-    /* Toggle LEDD_EXE to force the mode to switch */ \
-    rgb_ctrl_write(           (1 << 1) | (1 << 2)); \
-    rgb_ctrl_write((1 << 0) | (1 << 1) | (1 << 2)); \
-} while(0)
+#define CSR_RGB_CTRL_EXE_OFFSET 0
+#define CSR_RGB_CTRL_EXE_SIZE 1
+#define CSR_RGB_CTRL_CURREN_OFFSET 1
+#define CSR_RGB_CTRL_CURREN_SIZE 1
+#define CSR_RGB_CTRL_RGBLEDEN_OFFSET 2
+#define CSR_RGB_CTRL_RGBLEDEN_SIZE 1
+#define CSR_RGB_CTRL_RRAW_OFFSET 3
+#define CSR_RGB_CTRL_RRAW_SIZE 1
+#define CSR_RGB_CTRL_GRAW_OFFSET 4
+#define CSR_RGB_CTRL_GRAW_SIZE 1
+#define CSR_RGB_CTRL_BRAW_OFFSET 5
+#define CSR_RGB_CTRL_BRAW_SIZE 1
 
-static enum {
-    INVALID = 0,
-    IDLE,
-    WRITING,
-    ERROR,
-    DONE,
-    OFF,
-} rgb_mode;
-
-static void rgb_write(uint8_t value, uint8_t addr) {
+// Write a value into the LEDDA_IP register.
+static void ledda_write(uint8_t value, uint8_t addr) {
     rgb_addr_write(addr);
     rgb_dat_write(value);
 }
 
 void rgb_init(void) {
-    // Turn on the RGB block and current enable, as well as enabling led control
-    rgb_ctrl_write((1 << 0) | (1 << 1) | (1 << 2));
+    if (ledda_init_done)
+        return;
 
-    // Enable the LED driver, and set 250 Hz mode.
-    // Also set quick stop, which we'll use to switch patterns quickly.
-    rgb_write((1 << 7) | (1 << 6) | (1 << 3), LEDDCR0);
+    // Enable the driver
+    rgb_ctrl_write((1 << CSR_RGB_CTRL_EXE_OFFSET) | (1 << CSR_RGB_CTRL_CURREN_OFFSET) | (1 << CSR_RGB_CTRL_RGBLEDEN_OFFSET));
+
+    ledda_write(LEDDCR0_LEDDEN | LEDDCR0_FR250 | LEDDCR0_QUICKSTOP, LEDDCR0);
 
     // Set clock register to 12 MHz / 64 kHz - 1
-    rgb_write((12000000/64000)-1, LEDDBR);
+    ledda_write((12000000/64000)-1, LEDDBR);
 
-    rgb_mode_idle();
-}
+    // Ensure LED "breathe" effect is diabled
+    ledda_write(0, LEDDBCRR);
+    ledda_write(0, LEDDBCFR);
 
-static void rgb_switch_mode(uint8_t mode,
-        uint8_t onr, uint8_t ofr,
-        uint8_t onrate, uint8_t offrate,
-        uint8_t r, uint8_t g, uint8_t b) {
-    RGB_SWITCH_MODE(mode);
-    rgb_write(onr, LEDDONR);
-    rgb_write(ofr, LEDDOFR);
+    // Also disable the LED blink time
+    ledda_write(0, LEDDONR);
+    ledda_write(0, LEDDOFR);
 
-    rgb_write(BREATHE_ENABLE | BREATHE_EDGE_BOTH
-            | BREATHE_MODE_MODULATE | BREATHE_RATE(onrate), LEDDBCRR);
-    rgb_write(BREATHE_ENABLE | BREATHE_MODE_MODULATE | BREATHE_RATE(offrate), LEDDBCFR);
-
-    rgb_write(r, LEDDPWRG); // Red
-    rgb_write(g, LEDDPWRB); // Green
-    rgb_write(b, LEDDPWRR); // Blue
-}
-
-void rgb_mode_idle(void) {
-    rgb_switch_mode(IDLE, 12, 14, 2, 3, 0x00/4, 0x4a/4, 0xe1/4);
-}
-
-void rgb_mode_writing(void) {
-    rgb_switch_mode(WRITING, 1, 2, 1, 3, 0x00/4, 0x7a/4, 0x51/4);
-}
-
-void rgb_mode_error(void) {
-    rgb_switch_mode(ERROR, 3, 3, 2, 3, 0xf0/4, 0x0a/4, 0x01/4);
-}
-
-void rgb_mode_done(void) {
-    rgb_switch_mode(DONE, 8, 8, 2, 3, 0x14/4, 0xff/4, 0x44/4);
+    ledda_init_done = 1;
 }
 
 void rgb_mode_off(void) {
-    rgb_switch_mode(OFF, 0, 0, 0, 0, 0, 0, 0);    
+    ledda_write(0, LEDDPWRR); // Red
+    ledda_write(0, LEDDPWRG); // Green
+    ledda_write(0, LEDDPWRB); // Blue
 }
