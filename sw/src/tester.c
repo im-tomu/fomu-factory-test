@@ -128,7 +128,7 @@ static uint32_t test_touch(void)
     return error_count;
 }
 
-static const char color_names[] = {'B', 'R', 'G'};
+static const char color_names[] = {'G', 'R', 'B'};
 
 static uint32_t test_one_color(int color)
 {
@@ -137,6 +137,8 @@ static uint32_t test_one_color(int color)
     uint32_t detected_pulses;
     uint32_t high_value;
 
+    // Set the current color-under-test to bypass
+    // the LEDD block, and turn all other LEDs off.
     rgb_bypass_write(1 << color);
     rgb_mode_off();
 
