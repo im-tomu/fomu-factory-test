@@ -405,6 +405,11 @@ class SBLED(Module, AutoCSR):
             ),
         ]
 
+        # Drive the red LED at 12 mA, since the sensor isn't
+        # very sensitive to red.
+        # NOTE: This is over the 10 mA current limit of the LED,
+        # however we're pulsing it at 10% duty cycle, at which
+        # point the LED can handle up to 48 mA.
         self.specials += Instance("SB_RGBA_DRV",
             i_CURREN = self.ctrl.storage[1],
             i_RGBLEDEN = self.ctrl.storage[2],
@@ -415,11 +420,8 @@ class SBLED(Module, AutoCSR):
             o_RGB1 = pads.rgb1,
             o_RGB2 = pads.rgb2,
             p_CURRENT_MODE = "0b1", # Half current
-            # p_RGB0_CURRENT = "0b111111", # 12 mA
-            # p_RGB1_CURRENT = "0b111111", # 12 mA
-            # p_RGB2_CURRENT = "0b111111", # 12 mA
             p_RGB0_CURRENT = "0b000011", # 4 mA
-            p_RGB1_CURRENT = "0b000011", # 4 mA
+            p_RGB1_CURRENT = "0b111111", # 12 mA
             p_RGB2_CURRENT = "0b000011", # 4 mA
         )
 
